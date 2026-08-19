@@ -11,23 +11,27 @@ does not guarantee accuracy, and cannot predict profit.
 ## What is in here
 
 ```
+Every file sits at the repository root. There are no subfolders, so a phone
+upload cannot flatten the structure and break the script paths.
+
 index.html                  app shell, six screens
 styles.css                  graphite / navy interface
-js/util.js                  instruments, sessions, formatting, escaping, Wilson + Beta shrinkage
-js/indicators.js            EMA, ATR, ADX, RSI, MACD, Donchian, pivots, structure, Supertrend
-js/engine.js                the six-stage pipeline and the capped scoring model
-js/stats.js                 performance, calibration, Bayesian strategy weights, resolution
-js/backtest.js              walk-forward with in-sample / out-of-sample separation
-js/store.js                 IndexedDB, settings, secret-stripping, backup validation
-js/api.js                   backend client (no credentials ever touch this file)
-js/ui.js                    rendering, all output escaped
-js/app.js                   wiring, fetch policy, scan loop
+util.js                     instruments, sessions, formatting, escaping, Wilson + Beta shrinkage
+indicators.js               EMA, ATR, ADX, RSI, MACD, Donchian, pivots, structure, Supertrend
+engine.js                   the six-stage pipeline and the capped scoring model
+stats.js                    performance, calibration, Bayesian strategy weights, resolution
+backtest.js                 walk-forward with in-sample / out-of-sample separation
+store.js                    IndexedDB, settings, secret-stripping, backup validation
+api.js                      backend client (no credentials ever touch this file)
+ui.js                       rendering, all output escaped
+app.js                      wiring, fetch policy, scan loop
 sw.js                       app shell cache only, never market data
+manifest.webmanifest        PWA manifest
 icon-192.png / icon-512.png maskable PWA icons
 apple-touch-icon.png        iOS home screen icon
+favicon-32.png              browser tab icon
 screenshot-narrow.png       shown in the Android install dialog
-worker/edgepilot-worker.js  Cloudflare Worker backend that holds the API keys
-wrangler.toml               worker config (secrets are NOT in this file)
+edgepilot-worker.js         Cloudflare Worker backend (paste into Cloudflare, NOT served by Pages)
 ```
 
 ## Architecture, and why it is not one HTML file
@@ -47,7 +51,7 @@ exactly the same way, and median.co wraps a URL, so nothing changes for the APK.
 ## Deploy: backend first
 
 1. Create a Cloudflare account and open Workers.
-2. Create a worker and paste `worker/edgepilot-worker.js`.
+2. Create a worker and paste `edgepilot-worker.js`.
 3. Add secrets under Settings → Variables (encrypt each one):
    - `TWELVEDATA_KEY` — required
    - `GEMINI_KEY` — optional, enables the AI explanation button

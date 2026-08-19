@@ -7,6 +7,12 @@
 <meta name="description" content="EdgePilot - a selective, evidence-based forex and gold signal assistant.">
 <title>EdgePilot</title>
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EdgePilot">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -101,6 +107,13 @@
   <!-- ============ SETTINGS ============ -->
   <section id="screen-settings" class="screen" role="tabpanel" aria-labelledby="tab-settings" hidden>
     <h1 class="screen-title">Settings</h1>
+
+    <fieldset class="card" id="install-card" hidden>
+      <legend>Install</legend>
+      <p class="note">Install EdgePilot to your home screen so it opens full screen, keeps its own storage, and works offline for everything except live candles.</p>
+      <button id="btn-install" class="btn btn-primary btn-block" type="button" style="margin-top:10px">Install EdgePilot</button>
+      <p class="hint" id="install-hint"></p>
+    </fieldset>
 
     <fieldset class="card">
       <legend>Data provider</legend>
@@ -199,14 +212,14 @@
 <div id="modal-root"></div>
 <div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="true"></div>
 
-<script src="js/util.js"></script>
-<script src="js/indicators.js"></script>
-<script src="js/stats.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/backtest.js"></script>
-<script src="js/store.js"></script>
-<script src="js/api.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/app.js"></script>
+<script src="util.js"></script>
+<script src="indicators.js"></script>
+<script src="stats.js"></script>
+<script src="engine.js"></script>
+<script src="backtest.js"></script>
+<script src="store.js"></script>
+<script src="api.js"></script>
+<script src="ui.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
