@@ -18,7 +18,7 @@
    *   major  1.1.0 -> 2.0.0   engine or scoring change that makes old
    *                           resolved signals no longer comparable
    * --------------------------------------------------------------- */
-  EP.VERSION = '1.1.0';
+  EP.VERSION = '1.1.1';
   EP.BUILT = '2026-08-19';
 
   var U = EP.util = {};

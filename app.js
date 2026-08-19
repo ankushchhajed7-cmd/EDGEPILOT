@@ -276,23 +276,36 @@
   /* ================= settings ================= */
 
   function renderAbout() {
-    UI.$('about-version').textContent = EP.VERSION;
-    UI.$('about-built').textContent = EP.BUILT;
-    UI.$('about-engine').textContent = E.VERSION;
-    // Engine version matters separately: if the scoring model changed, older
-    // resolved signals were produced by different rules and mixing them into
-    // one win rate would quietly misrepresent both.
-    var mixed = {};
-    (state.resolved || []).forEach(function (r) {
-      var v = r.engineVersion || 'unknown';
-      mixed[v] = (mixed[v] || 0) + 1;
-    });
-    var versions = Object.keys(mixed);
-    UI.$('about-note').textContent = versions.length > 1
-      ? 'Your resolved signals span ' + versions.length + ' engine versions (' +
-        versions.map(function (v) { return v + ': ' + mixed[v]; }).join(', ') +
-        '). Statistics below combine them, so treat the comparison with care.'
-      : 'All resolved signals were produced by a single engine version.';
+    // Runs at boot, before stats have loaded, so every lookup is guarded.
+    // An exception here used to abort the function and leave the fields at "--".
+    try {
+      var v = UI.$('about-version'), b = UI.$('about-built'), e2 = UI.$('about-engine'), n = UI.$('about-note');
+      if (!v) return;
+      v.textContent = (window.EP && EP.VERSION) ? EP.VERSION : 'unknown';
+      if (b) b.textContent = (window.EP && EP.BUILT) ? EP.BUILT : 'unknown';
+      if (e2) e2.textContent = (window.EP && EP.engine && EP.engine.VERSION) ? EP.engine.VERSION : 'unknown';
+      if (!n) return;
+
+      // Engine version matters separately: if the scoring model changed, older
+      // resolved signals were produced by different rules, and merging them into
+      // one win rate would quietly misrepresent both.
+      var mixed = {};
+      (state.resolved || []).forEach(function (r) {
+        var ev = (r && r.engineVersion) || 'unknown';
+        mixed[ev] = (mixed[ev] || 0) + 1;
+      });
+      var versions = Object.keys(mixed);
+      n.textContent = versions.length > 1
+        ? 'Your resolved signals span ' + versions.length + ' engine versions (' +
+          versions.map(function (x) { return x + ': ' + mixed[x]; }).join(', ') +
+          '). Statistics combine them, so treat the comparison with care.'
+        : (versions.length === 1
+            ? 'All resolved signals were produced by engine ' + versions[0] + '.'
+            : 'No resolved signals yet.');
+    } catch (err) {
+      var vv = UI.$('about-version');
+      if (vv) vv.textContent = 'error: ' + err.message;
+    }
   }
 
   function applyMode(mode) {
@@ -604,6 +617,7 @@
   /* ================= boot ================= */
 
   async function boot() {
+    renderAbout();   // fill this first; nothing here depends on stored data
     wire();
     setupInstall();
     renderSettings();
