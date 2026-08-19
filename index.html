@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080B10">
+<meta name="description" content="EdgePilot - a selective, evidence-based forex and gold signal assistant.">
+<title>EdgePilot</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to main content</a>
+
+<header class="topbar" role="banner">
+  <div class="topbar-row">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">EdgePilot</span>
+    </div>
+    <button id="btn-refresh" class="icon-btn" type="button" aria-label="Refresh market data">
+      <span class="icon-refresh" aria-hidden="true"></span>
+    </button>
+  </div>
+  <div id="status-strip" class="status-strip" aria-live="polite">
+    <span class="chip chip-muted" id="chip-session">Session --</span>
+    <span class="chip chip-muted" id="chip-regime">Regime --</span>
+    <span class="chip chip-muted" id="chip-fresh">Data --</span>
+  </div>
+  <div id="banner-slot"></div>
+</header>
+
+<main id="main" tabindex="-1">
+
+  <!-- ============ TODAY ============ -->
+  <section id="screen-today" class="screen" role="tabpanel" aria-labelledby="tab-today">
+    <h1 class="screen-title">Today's edge</h1>
+    <p class="screen-sub" id="today-sub">Run a scan to see whether anything currently clears the filters.</p>
+    <div id="today-risk" class="risk-strip" hidden></div>
+    <div id="today-body"></div>
+  </section>
+
+  <!-- ============ SCANNER ============ -->
+  <section id="screen-scan" class="screen" role="tabpanel" aria-labelledby="tab-scan" hidden>
+    <h1 class="screen-title">Setup scanner</h1>
+    <p class="screen-sub">Every instrument you track, with the gate each one stopped at.</p>
+    <div class="scan-actions">
+      <button id="btn-scan" class="btn btn-primary" type="button">Analyze all instruments</button>
+      <div id="scan-progress" class="progress" hidden><div class="progress-bar"></div></div>
+    </div>
+    <div id="scan-body"></div>
+  </section>
+
+  <!-- ============ SIGNAL DETAIL ============ -->
+  <section id="screen-signal" class="screen" role="tabpanel" aria-label="Signal detail" hidden>
+    <button id="btn-back" class="btn btn-ghost btn-back" type="button">Back</button>
+    <div id="signal-body"></div>
+  </section>
+
+  <!-- ============ PERFORMANCE LAB ============ -->
+  <section id="screen-lab" class="screen" role="tabpanel" aria-labelledby="tab-lab" hidden>
+    <h1 class="screen-title">Performance lab</h1>
+    <p class="screen-sub">Live results come only from signals this app generated and then resolved. Backtests are kept separate and never mixed in.</p>
+
+    <div class="tabs-inline" role="tablist" aria-label="Performance views">
+      <button class="tab-inline is-active" role="tab" id="lab-tab-live" aria-selected="true" aria-controls="lab-live" type="button">Live record</button>
+      <button class="tab-inline" role="tab" id="lab-tab-cal" aria-selected="false" aria-controls="lab-cal" type="button">Calibration</button>
+      <button class="tab-inline" role="tab" id="lab-tab-bt" aria-selected="false" aria-controls="lab-bt" type="button">Walk-forward</button>
+    </div>
+
+    <div id="lab-live" role="tabpanel" aria-labelledby="lab-tab-live"></div>
+    <div id="lab-cal" role="tabpanel" aria-labelledby="lab-tab-cal" hidden></div>
+    <div id="lab-bt" role="tabpanel" aria-labelledby="lab-tab-bt" hidden>
+      <div class="field">
+        <label for="bt-symbol">Instrument</label>
+        <select id="bt-symbol"></select>
+      </div>
+      <button id="btn-backtest" class="btn btn-primary" type="button">Run walk-forward test</button>
+      <div id="bt-progress" class="progress" hidden><div class="progress-bar"></div></div>
+      <div id="bt-body"></div>
+    </div>
+  </section>
+
+  <!-- ============ JOURNAL ============ -->
+  <section id="screen-journal" class="screen" role="tabpanel" aria-labelledby="tab-journal" hidden>
+    <h1 class="screen-title">Trade journal</h1>
+    <p class="screen-sub">What the engine produced, what you actually did, and how it finished.</p>
+    <div class="journal-actions">
+      <button id="btn-resolve" class="btn btn-secondary" type="button">Check open signals</button>
+      <button id="btn-export" class="btn btn-ghost" type="button">Export backup</button>
+      <button id="btn-import" class="btn btn-ghost" type="button">Import backup</button>
+      <input id="file-import" type="file" accept="application/json,.json" hidden>
+    </div>
+    <div id="journal-body"></div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="screen-settings" class="screen" role="tabpanel" aria-labelledby="tab-settings" hidden>
+    <h1 class="screen-title">Settings</h1>
+
+    <fieldset class="card">
+      <legend>Data provider</legend>
+      <p class="note">EdgePilot never stores provider keys. Your key lives on the backend you deploy; this app only knows its address.</p>
+      <div class="field">
+        <label for="set-backend">Backend URL</label>
+        <input id="set-backend" type="url" inputmode="url" placeholder="https://edgepilot-api.yourname.workers.dev" autocomplete="off">
+        <p class="hint" id="hint-backend">Deploy the worker in <span class="mono">worker/edgepilot-worker.js</span>, then paste its address here.</p>
+      </div>
+      <button id="btn-health" class="btn btn-secondary" type="button">Test connection</button>
+      <div id="health-result" class="health" aria-live="polite"></div>
+    </fieldset>
+
+    <fieldset class="card">
+      <legend>Instruments and timeframe</legend>
+      <div id="set-instruments" class="checks"></div>
+      <div class="field">
+        <label for="set-tf">Entry timeframe</label>
+        <select id="set-tf">
+          <option value="15min">M15</option>
+          <option value="1h">H1</option>
+          <option value="4h">H4</option>
+        </select>
+        <p class="hint">Direction always comes from D1 and H4. This only controls entry timing.</p>
+      </div>
+    </fieldset>
+
+    <fieldset class="card">
+      <legend>Risk</legend>
+      <div class="grid-2">
+        <div class="field"><label for="set-balance">Account balance (USD)</label><input id="set-balance" type="number" inputmode="decimal" min="1" step="1"></div>
+        <div class="field"><label for="set-risk">Risk per trade (%)</label><input id="set-risk" type="number" inputmode="decimal" min="0.05" max="5" step="0.05"></div>
+        <div class="field"><label for="set-minrr">Minimum net R:R</label><input id="set-minrr" type="number" inputmode="decimal" min="1" max="5" step="0.1"></div>
+        <div class="field"><label for="set-minscore">Minimum setup score</label><input id="set-minscore" type="number" inputmode="numeric" min="0" max="100" step="1"></div>
+        <div class="field"><label for="set-dll">Daily loss limit (R)</label><input id="set-dll" type="number" inputmode="decimal" min="0.5" max="10" step="0.5"></div>
+        <div class="field"><label for="set-cooldown">Cooldown after N losses</label><input id="set-cooldown" type="number" inputmode="numeric" min="2" max="10" step="1"></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="card">
+      <legend>Filters</legend>
+      <div class="switch-row">
+        <input type="checkbox" id="set-lowliq" class="switch">
+        <label for="set-lowliq">Allow signals in low liquidity conditions</label>
+      </div>
+      <div class="switch-row">
+        <input type="checkbox" id="set-highvol" class="switch">
+        <label for="set-highvol">Allow signals in extreme volatility</label>
+      </div>
+      <div class="switch-row">
+        <input type="checkbox" id="set-counter" class="switch">
+        <label for="set-counter">Allow range reversal when D1 and H4 disagree</label>
+      </div>
+      <div class="switch-row">
+        <input type="checkbox" id="set-ai" class="switch">
+        <label for="set-ai">Enable AI explanations of generated setups</label>
+      </div>
+      <p class="note">AI can only describe a setup the engine already produced. It cannot create one, change levels, or override a filter.</p>
+    </fieldset>
+
+    <fieldset class="card">
+      <legend>Trading costs</legend>
+      <p class="note">Defaults are broker-generic. Replace them with your own spread and commission or every R:R number here will be optimistic.</p>
+      <div id="set-costs"></div>
+    </fieldset>
+
+    <fieldset class="card">
+      <legend>Data</legend>
+      <button id="btn-clear-cache" class="btn btn-ghost" type="button">Clear candle cache</button>
+      <button id="btn-wipe" class="btn btn-danger" type="button">Erase all signals and journal</button>
+    </fieldset>
+
+    <p class="legal">EdgePilot is an educational analysis tool. It does not provide financial advice, does not guarantee accuracy, and does not predict profit. Trading forex, metals and crypto carries a real risk of losing money.</p>
+  </section>
+
+</main>
+
+<nav class="tabbar" role="tablist" aria-label="Main sections">
+  <button class="tab is-active" role="tab" id="tab-today" aria-selected="true" aria-controls="screen-today" data-screen="today" type="button">
+    <span class="tab-ico" aria-hidden="true">◆</span><span>Today</span>
+  </button>
+  <button class="tab" role="tab" id="tab-scan" aria-selected="false" aria-controls="screen-scan" data-screen="scan" type="button">
+    <span class="tab-ico" aria-hidden="true">▤</span><span>Scan</span>
+  </button>
+  <button class="tab" role="tab" id="tab-lab" aria-selected="false" aria-controls="screen-lab" data-screen="lab" type="button">
+    <span class="tab-ico" aria-hidden="true">▦</span><span>Lab</span>
+  </button>
+  <button class="tab" role="tab" id="tab-journal" aria-selected="false" aria-controls="screen-journal" data-screen="journal" type="button">
+    <span class="tab-ico" aria-hidden="true">▥</span><span>Journal</span>
+  </button>
+  <button class="tab" role="tab" id="tab-settings" aria-selected="false" aria-controls="screen-settings" data-screen="settings" type="button">
+    <span class="tab-ico" aria-hidden="true">◇</span><span>Settings</span>
+  </button>
+</nav>
+
+<div id="modal-root"></div>
+<div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="true"></div>
+
+<script src="js/util.js"></script>
+<script src="js/indicators.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/backtest.js"></script>
+<script src="js/store.js"></script>
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
