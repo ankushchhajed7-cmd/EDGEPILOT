@@ -1,0 +1,12 @@
+name = "edgepilot-api"
+main = "edgepilot-worker.js"
+compatibility_date = "2024-11-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://ankushchhajed7-cmd.github.io"
+# NEWS_FEED_URL = "https://example.com/high-impact-calendar.json"
+
+# Secrets are NOT stored here. Set them with:
+#   wrangler secret put TWELVEDATA_KEY
+#   wrangler secret put GEMINI_KEY
+#   wrangler secret put ACCESS_TOKEN
