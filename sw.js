@@ -2,7 +2,10 @@
  * Caches the app shell only. Market data is never cached here: a stale candle
  * served from a service worker would defeat the entire data-quality gate.
  */
-const SHELL = 'edgepilot-shell-v1';
+// Single source of truth for the version lives in util.js, so the cache name
+// changes automatically whenever EP.VERSION is bumped.
+importScripts('./util.js');
+const SHELL = 'edgepilot-shell-v' + self.EP.VERSION;
 const FILES = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './util.js', './indicators.js', './stats.js', './engine.js',
@@ -19,6 +22,8 @@ self.addEventListener('activate', (e) => {
     caches.keys()
       .then((keys) => Promise.all(keys.filter((k) => k !== SHELL).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window' }))
+      .then((cs) => cs.forEach((c) => c.postMessage({ type: 'EP_UPDATED', version: self.EP.VERSION })))
   );
 });
 

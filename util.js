@@ -5,6 +5,22 @@
 (function (root) {
   'use strict';
   var EP = root.EP = root.EP || {};
+
+  /* ---------------------------------------------------------------
+   * APP VERSION - the single source of truth.
+   *
+   * Bump this on every change you ship. The service worker reads it to
+   * name its cache, so without a bump users keep running the old files
+   * no matter what you push to Pages.
+   *
+   *   patch  1.1.0 -> 1.1.1   bug fix, wording, styling
+   *   minor  1.1.0 -> 1.2.0   new feature or screen
+   *   major  1.1.0 -> 2.0.0   engine or scoring change that makes old
+   *                           resolved signals no longer comparable
+   * --------------------------------------------------------------- */
+  EP.VERSION = '1.1.0';
+  EP.BUILT = '2026-08-19';
+
   var U = EP.util = {};
 
   /* ---------- instruments ---------- */

@@ -78,6 +78,7 @@
 
     sig.history = S.historyFor(sig, state.resolved);
     sig.confidence = S.confidenceFor(sig, state.calibration);
+    sig.appVersion = EP.VERSION;
     sig.fetchedAt = Math.min(d1.fetchedAt || Date.now(), h4.fetchedAt || Date.now(), en.fetchedAt || Date.now());
     return sig;
   }
@@ -180,6 +181,7 @@
     UI.renderLabLive(state.resolved);
     UI.renderCalibration(state.resolved);
     St.allJournal().then(function (j) { UI.renderJournal(state.allSignals, j, handlers); });
+    if (UI.$('about-version')) renderAbout();
   }
 
   var handlers = {
@@ -272,6 +274,26 @@
   }
 
   /* ================= settings ================= */
+
+  function renderAbout() {
+    UI.$('about-version').textContent = EP.VERSION;
+    UI.$('about-built').textContent = EP.BUILT;
+    UI.$('about-engine').textContent = E.VERSION;
+    // Engine version matters separately: if the scoring model changed, older
+    // resolved signals were produced by different rules and mixing them into
+    // one win rate would quietly misrepresent both.
+    var mixed = {};
+    (state.resolved || []).forEach(function (r) {
+      var v = r.engineVersion || 'unknown';
+      mixed[v] = (mixed[v] || 0) + 1;
+    });
+    var versions = Object.keys(mixed);
+    UI.$('about-note').textContent = versions.length > 1
+      ? 'Your resolved signals span ' + versions.length + ' engine versions (' +
+        versions.map(function (v) { return v + ': ' + mixed[v]; }).join(', ') +
+        '). Statistics below combine them, so treat the comparison with care.'
+      : 'All resolved signals were produced by a single engine version.';
+  }
 
   function applyMode(mode) {
     UI.$('mode-backend').hidden = (mode === 'direct');
@@ -480,6 +502,24 @@
         : '<div class="banner bad" role="alert"><strong>Not reachable.</strong><span>' + U.esc(r.error) + '</span></div>';
     });
 
+    UI.$('btn-update').addEventListener('click', async function () {
+      if (!('serviceWorker' in navigator)) { UI.toast('This browser cannot check for updates.'); return; }
+      try {
+        var reg = await navigator.serviceWorker.getRegistration();
+        if (!reg) { UI.toast('No service worker registered yet. Reload once.'); return; }
+        await reg.update();
+        UI.toast('Checked. If a newer version exists it will install on the next reload.');
+      } catch (e) {
+        UI.toast('Update check failed: ' + e.message, true);
+      }
+    });
+
+    navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', function (ev) {
+      if (ev.data && ev.data.type === 'EP_UPDATED' && ev.data.version !== EP.VERSION) {
+        UI.toast('Version ' + ev.data.version + ' installed. Reload to use it.');
+      }
+    });
+
     UI.$('btn-clear-cache').addEventListener('click', async function () {
       await St.clear('candles');
       UI.toast('Candle cache cleared. The next scan will refetch.');
@@ -569,6 +609,7 @@
     renderSettings();
     fillBacktestSymbols();
     await reloadStats();
+    renderAbout();
     renderAll();
 
     if ('serviceWorker' in navigator) {
