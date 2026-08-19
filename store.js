@@ -14,6 +14,8 @@
   /* ================= settings ================= */
 
   St.DEFAULTS = {
+    dataMode: 'backend',   // 'backend' = key lives on the worker, 'direct' = key lives in this browser
+    twelvedataKey: '',     // only used in direct mode; see the warning in Settings
     backendUrl: '',
     entryTf: '1h',
     instruments: ['XAU/USD', 'EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD'],
@@ -50,11 +52,17 @@
   // so a future careless edit cannot quietly start persisting secrets.
   var SECRET_RE = /(key|token|secret|password|passwd|credential|apikey|bearer|auth|upi|qr)/i;
 
+  // The single deliberate exception. Direct mode needs a provider key in this
+  // browser, so `twelvedataKey` is allowed through the stripper. It is still
+  // excluded from every backup file - see exportBackup below.
+  var ALLOWED_SECRETS = { twelvedataKey: 1 };
+
   St.stripSecrets = function (obj, found) {
     found = found || [];
     if (obj == null || typeof obj !== 'object') return { value: obj, found: found };
     var out = Array.isArray(obj) ? [] : {};
     Object.keys(obj).forEach(function (k) {
+      if (ALLOWED_SECRETS[k]) { out[k] = obj[k]; return; }
       if (SECRET_RE.test(k)) { found.push(k); return; }
       var r = St.stripSecrets(obj[k], found);
       out[k] = r.value;
@@ -215,7 +223,8 @@
     var signals = await St.all('signals');
     var journal = await St.all('journal');
     var settings = St.stripSecrets(St.loadSettings()).value;
-    delete settings.backendUrl; // an endpoint is not a secret, but it is not yours to hand out either
+    delete settings.backendUrl;    // an endpoint is not a secret, but it is not yours to hand out either
+    delete settings.twelvedataKey; // a provider key never leaves this device in a backup
     return {
       format: 'edgepilot.backup', version: 1, exportedAt: new Date().toISOString(),
       counts: { signals: signals.length, journal: journal.length },
@@ -240,7 +249,9 @@
       if (!r || typeof r.id !== 'string' || !U.isNum(r.createdAt) || typeof r.symbol !== 'string') { badSignals++; return; }
       if (!U.instrument(r.symbol)) { badSignals++; return; }
       if (r.rMultiple != null && !U.isNum(r.rMultiple)) { badSignals++; return; }
-      goodSignals.push(St.stripSecrets(r).value);
+      var cleanSig = St.stripSecrets(r).value;
+      delete cleanSig.twelvedataKey;
+      goodSignals.push(cleanSig);
     });
     var goodJournal = [], badJournal = 0;
     obj.journal.forEach(function (r) {

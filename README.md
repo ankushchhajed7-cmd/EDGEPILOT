@@ -34,6 +34,21 @@ screenshot-narrow.png       shown in the Android install dialog
 edgepilot-worker.js         Cloudflare Worker backend (paste into Cloudflare, NOT served by Pages)
 ```
 
+## Two ways to get market data
+
+**Backend mode (default).** A Cloudflare Worker holds your provider key. The app
+only knows the worker's address, which is not a credential. This is the mode the
+spec asks for and the only one fit for a published or sold app.
+
+**Direct mode.** The browser calls TwelveData itself using a key stored in this
+browser. It is faster to set up and needs no worker, but the key is readable by
+anyone who opens the site's code, and they can spend your daily quota. Direct
+mode also has no economic calendar and no AI explanations, so news risk reads
+UNKNOWN — which the engine treats as unverified, not cleared.
+
+Switch in **Settings → Data provider**. The key is never written into a backup
+file in either mode.
+
 ## Architecture, and why it is not one HTML file
 
 Your spec says provider credentials stay server-side and localStorage never holds

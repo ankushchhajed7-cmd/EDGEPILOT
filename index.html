@@ -117,12 +117,35 @@
 
     <fieldset class="card">
       <legend>Data provider</legend>
-      <p class="note">EdgePilot never stores provider keys. Your key lives on the backend you deploy; this app only knows its address.</p>
+
       <div class="field">
-        <label for="set-backend">Backend URL</label>
-        <input id="set-backend" type="url" inputmode="url" placeholder="https://edgepilot-api.yourname.workers.dev" autocomplete="off">
-        <p class="hint" id="hint-backend">Deploy the worker in <span class="mono">worker/edgepilot-worker.js</span>, then paste its address here.</p>
+        <label for="set-mode">How market data is fetched</label>
+        <select id="set-mode">
+          <option value="backend">Backend worker (key stays server-side)</option>
+          <option value="direct">Direct from this browser (key stored here)</option>
+        </select>
       </div>
+
+      <div id="mode-backend">
+        <div class="field">
+          <label for="set-backend">Backend URL</label>
+          <input id="set-backend" type="url" inputmode="url" placeholder="https://edgepilot-api.yourname.workers.dev" autocomplete="off">
+          <p class="hint">Deploy <span class="mono">edgepilot-worker.js</span> to Cloudflare, then paste its address here. Your provider key lives on the worker and never reaches this app.</p>
+        </div>
+      </div>
+
+      <div id="mode-direct" hidden>
+        <div class="banner bad" role="note" style="margin-bottom:12px">
+          <strong>Your key will be readable.</strong>
+          <span>In direct mode the key is stored in this browser and sent from this page. Anyone who opens this site's code can read it and spend your quota. Use a throwaway key, and switch to backend mode before sharing or selling this app.</span>
+        </div>
+        <div class="field">
+          <label for="set-tdkey">TwelveData API key</label>
+          <input id="set-tdkey" type="password" inputmode="text" placeholder="32 character key" autocomplete="off" spellcheck="false">
+          <p class="hint">Direct mode fetches candles only. The economic calendar and AI explanations both need a backend, so news risk will read UNKNOWN.</p>
+        </div>
+      </div>
+
       <button id="btn-health" class="btn btn-secondary" type="button">Test connection</button>
       <div id="health-result" class="health" aria-live="polite"></div>
     </fieldset>

@@ -84,7 +84,11 @@
 
   async function scanAll() {
     if (state.busy) return;
-    if (!state.settings.backendUrl) { UI.setScreen('settings'); UI.toast('Add a backend URL first.', true); return; }
+    if (state.settings.dataMode === 'direct') {
+      if (!state.settings.twelvedataKey) { UI.setScreen('settings'); UI.toast('Add your TwelveData key first.', true); return; }
+    } else if (!state.settings.backendUrl) {
+      UI.setScreen('settings'); UI.toast('Add a backend URL first.', true); return;
+    }
     state.busy = true;
     setBusy(true);
     var prog = UI.$('scan-progress'), bar = prog.querySelector('.progress-bar');
@@ -269,9 +273,17 @@
 
   /* ================= settings ================= */
 
+  function applyMode(mode) {
+    UI.$('mode-backend').hidden = (mode === 'direct');
+    UI.$('mode-direct').hidden = (mode !== 'direct');
+  }
+
   function renderSettings() {
     var s = state.settings;
+    UI.$('set-mode').value = s.dataMode || 'backend';
     UI.$('set-backend').value = s.backendUrl || '';
+    UI.$('set-tdkey').value = s.twelvedataKey || '';
+    applyMode(s.dataMode || 'backend');
     UI.$('set-tf').value = s.entryTf;
     UI.$('set-balance').value = s.accountBalance;
     UI.$('set-risk').value = s.riskPercent;
@@ -307,7 +319,9 @@
 
   function collectSettings() {
     var s = Object.assign({}, state.settings);
+    s.dataMode = UI.$('set-mode').value === 'direct' ? 'direct' : 'backend';
     s.backendUrl = UI.$('set-backend').value.trim();
+    s.twelvedataKey = UI.$('set-tdkey').value.trim();
     s.entryTf = UI.$('set-tf').value;
     s.accountBalance = Math.max(1, Number(UI.$('set-balance').value) || 1000);
     s.riskPercent = U.clamp(Number(UI.$('set-risk').value) || 0.5, 0.05, 5);
@@ -446,9 +460,10 @@
     });
 
     ['set-backend', 'set-tf', 'set-balance', 'set-risk', 'set-minrr', 'set-minscore', 'set-dll', 'set-cooldown',
-      'set-lowliq', 'set-highvol', 'set-counter', 'set-ai'].forEach(function (id) {
+      'set-lowliq', 'set-highvol', 'set-counter', 'set-ai', 'set-mode', 'set-tdkey'].forEach(function (id) {
       UI.$(id).addEventListener('change', saveSettings);
     });
+    UI.$('set-mode').addEventListener('change', function () { applyMode(UI.$('set-mode').value); });
     UI.$('set-instruments').addEventListener('change', saveSettings);
     UI.$('set-costs').addEventListener('change', saveSettings);
 
@@ -458,7 +473,10 @@
       var r = await A.health(state.settings);
       out.innerHTML = r.ok
         ? '<div class="banner" role="status"><strong>Connected.</strong><span>' +
-          U.esc('Market data: ' + (r.providers.marketData || 'unknown') + '. Calendar: ' + (r.providers.calendar || 'not configured') + '. AI: ' + (r.providers.ai || 'not configured') + '.') + '</span></div>'
+          U.esc('Market data: ' + (r.providers.marketData || 'unknown') +
+            '. Calendar: ' + (r.providers.calendar || 'not configured') +
+            '. AI: ' + (r.providers.ai || 'not configured') + '.' +
+            (r.note ? ' ' + r.note : '')) + '</span></div>'
         : '<div class="banner bad" role="alert"><strong>Not reachable.</strong><span>' + U.esc(r.error) + '</span></div>';
     });
 
@@ -556,9 +574,12 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(function () { /* offline shell is optional */ });
     }
-    if (state.settings.backendUrl) {
+    var configured = state.settings.dataMode === 'direct'
+      ? !!state.settings.twelvedataKey
+      : !!state.settings.backendUrl;
+    if (configured) {
       var h = await A.health(state.settings);
-      if (!h.ok) UI.toast('Backend not reachable: ' + h.error, true);
+      if (!h.ok) UI.toast('Data source not reachable: ' + h.error, true);
     }
   }
 

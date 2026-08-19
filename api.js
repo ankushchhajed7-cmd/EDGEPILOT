@@ -44,6 +44,21 @@
   }
 
   A.health = async function (settings) {
+    if (settings.dataMode === 'direct') {
+      try {
+        var probe = await A.ohlcDirect(settings, 'EUR/USD', '1h', 5);
+        A.state.backendOk = true;
+        return {
+          ok: true,
+          providers: { marketData: 'twelvedata (direct)', calendar: null, ai: null },
+          serverTime: Date.now(),
+          note: probe.candles.length + ' closed candles returned.'
+        };
+      } catch (e) {
+        A.state.backendOk = false;
+        return { ok: false, error: e.message };
+      }
+    }
     try {
       var d = await req(settings, '/health', { timeoutMs: 8000 });
       A.state.backendOk = true;
@@ -58,7 +73,53 @@
    * Candles are returned oldest-first as {t,o,h,l,c,v}. The backend must not
    * return a still-forming candle, but the engine re-checks anyway.
    */
-  A.ohlc = async function (settings, symbol, interval, outputsize) {
+  var TD_INTERVAL = { '15min': '15min', '1h': '1h', '4h': '4h', '1day': '1day' };
+
+  /**
+   * Direct mode. The browser talks to TwelveData itself, so the key is present
+   * in this page and anyone with the page can read it. Kept as an explicit
+   * opt-in, never the default.
+   */
+  A.ohlcDirect = async function (settings, symbol, interval, outputsize) {
+    var key = (settings.twelvedataKey || '').trim();
+    if (!key) throw new A.ConfigError('No TwelveData key is set. Open Settings and add one, or switch back to backend mode.');
+    if (!TD_INTERVAL[interval]) throw new Error('Unsupported interval ' + interval + '.');
+
+    var u = 'https://api.twelvedata.com/time_series' +
+      '?symbol=' + encodeURIComponent(symbol) +
+      '&interval=' + TD_INTERVAL[interval] +
+      '&outputsize=' + encodeURIComponent(outputsize || 300) +
+      '&timezone=UTC&order=ASC&apikey=' + encodeURIComponent(key);
+
+    var ctl = new AbortController();
+    var timer = setTimeout(function () { ctl.abort(); }, 20000);
+    var d;
+    try {
+      var r = await fetch(u, { signal: ctl.signal, cache: 'no-store' });
+      d = await r.json();
+    } catch (err) {
+      throw new Error('Could not reach TwelveData: ' + err.message);
+    } finally { clearTimeout(timer); }
+
+    if (!d || !Array.isArray(d.values)) {
+      throw new Error(String((d && d.message) || 'TwelveData returned no series').slice(0, 250));
+    }
+
+    var nowMs = Date.now(), tfMs = U.TF_MS[interval], out = [];
+    for (var i = 0; i < d.values.length; i++) {
+      var v = d.values[i];
+      var t = Date.parse(String(v.datetime).replace(' ', 'T') + 'Z');
+      if (!U.isNum(t)) continue;
+      if (t + tfMs > nowMs) continue; // drop the candle that is still forming
+      var o = +v.open, h = +v.high, l = +v.low, c = +v.close;
+      if (!U.isNum(o) || !U.isNum(h) || !U.isNum(l) || !U.isNum(c)) continue;
+      out.push({ t: t, o: o, h: h, l: l, c: c, v: v.volume != null ? +v.volume : null });
+    }
+    out.sort(function (a, b) { return a.t - b.t; });
+    return { candles: out, provider: 'twelvedata (direct)', cached: false, fetchedAt: Date.now() };
+  };
+
+  A.ohlcBackend = async function (settings, symbol, interval, outputsize) {
     var q = '?symbol=' + encodeURIComponent(symbol) +
       '&interval=' + encodeURIComponent(interval) +
       '&outputsize=' + encodeURIComponent(outputsize || 300);
@@ -77,9 +138,27 @@
    * rather than returning an empty list, because "no events" and "no data" are
    * completely different risk positions.
    */
-  A.calendar = async function (settings, symbol) {
+  A.ohlc = function (settings, symbol, interval, outputsize) {
+    return settings.dataMode === 'direct'
+      ? A.ohlcDirect(settings, symbol, interval, outputsize)
+      : A.ohlcBackend(settings, symbol, interval, outputsize);
+  };
+
+  A.calendarBackend = async function (settings, symbol) {
     var d = await req(settings, '/calendar?symbol=' + encodeURIComponent(symbol), { timeoutMs: 12000 });
     return d;
+  };
+
+  A.calendar = function (settings, symbol) {
+    if (settings.dataMode === 'direct') {
+      // No calendar provider is reachable without a backend, and "no feed" is
+      // not the same as "no events". Report it as unverified.
+      return Promise.resolve({
+        available: false,
+        reason: 'Direct mode has no economic calendar. News risk is unverified, not cleared.'
+      });
+    }
+    return A.calendarBackend(settings, symbol);
   };
 
   A.newsStatusFor = function (calendar, symbol, nowMs, settings) {
@@ -114,6 +193,9 @@
    * response is escaped before it touches the DOM.
    */
   A.explain = async function (settings, factSheet) {
+    if (settings.dataMode === 'direct') {
+      throw new Error('AI explanations need a backend. Direct mode only fetches market data.');
+    }
     var d = await req(settings, '/ai/explain', { method: 'POST', body: { facts: factSheet }, timeoutMs: 30000 });
     if (!d || typeof d.text !== 'string') throw new Error('AI backend returned no text.');
     return { text: d.text.slice(0, 4000), model: d.model, disclaimer: d.disclaimer };

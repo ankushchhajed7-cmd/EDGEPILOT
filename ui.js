@@ -387,9 +387,14 @@
         (rs.cooldownUntil > Date.now() ? '<span>Cooldown until <b>' + e(U.fmtTime(rs.cooldownUntil)) + '</b></span>' : '');
     } else strip.hidden = true;
 
-    if (!state.settings.backendUrl) {
+    var direct = state.settings.dataMode === 'direct';
+    var configured = direct ? !!state.settings.twelvedataKey : !!state.settings.backendUrl;
+    if (!configured) {
       body.innerHTML = '<div class="empty"><div class="empty-head">NO DATA SOURCE</div>' +
-        '<p>EdgePilot needs a backend before it can read a single candle. Deploy the worker, then add its address in Settings.</p></div>';
+        '<p>' + (direct
+          ? 'Direct mode is selected but no TwelveData key is set. Add one in Settings.'
+          : 'EdgePilot needs a backend before it can read a single candle. Deploy the worker, then add its address in Settings.') +
+        '</p></div>';
       var b0 = document.createElement('button');
       b0.className = 'btn btn-primary'; b0.type = 'button'; b0.textContent = 'Open settings';
       b0.addEventListener('click', function () { UI.setScreen('settings'); });
